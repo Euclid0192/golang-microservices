@@ -3,10 +3,12 @@ package main
 import (
 	"log"
 	"net/http"
+
+	common "github.com/Euclid0192/commons"
 )
 
-const (
-	httpAddr = ":8080"
+var (
+	httpAddr = common.EnvString("HTTP_ADDR", ":8080")
 )
 
 func main() {
