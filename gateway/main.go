@@ -5,10 +5,11 @@ import (
 	"net/http"
 
 	common "github.com/Euclid0192/commons"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 var (
-	httpAddr = common.EnvString("HTTP_ADDR", ":8080")
+	httpAddr = common.EnvString("HTTP_ADDR", ":3000")
 )
 
 func main() {
