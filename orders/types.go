@@ -8,7 +8,7 @@ import (
 
 type OrdersService interface {
 	CreateOrder(context.Context) error
-	ValidateOrders(context.Context, pb.CreateOrderRequest) error
+	ValidateOrders(context.Context, *pb.CreateOrderRequest) error
 }
 
 type OrdersStore interface {
