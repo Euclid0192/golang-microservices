@@ -6,17 +6,19 @@ import (
 
 	common "github.com/Euclid0192/commons"
 	pb "github.com/Euclid0192/commons/api"
+	"github.com/Euclid0192/order-management-system-gateway/gateway"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type handler struct {
 	// gateway
-	client pb.OrderServiceClient
+	// client pb.OrderServiceClient
+	gateway gateway.OrdersGateway
 }
 
-func NewHandler(client pb.OrderServiceClient) *handler {
-	return &handler{client: client}
+func NewHandler(gateway gateway.OrdersGateway) *handler {
+	return &handler{gateway: gateway}
 }
 
 func (h *handler) registerRoutes(mux *http.ServeMux) {
@@ -38,7 +40,7 @@ func (h *handler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	o, err := h.client.CreateOrder(r.Context(), &pb.CreateOrderRequest{
+	o, err := h.gateway.CreateOrder(r.Context(), &pb.CreateOrderRequest{
 		CusomterID: customerID,
 		Items:      items,
 	})
@@ -55,6 +57,7 @@ func (h *handler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	/// Write newly created order back to client
 	common.WriteJSON(w, http.StatusOK, o)
 }
 
