@@ -58,6 +58,13 @@ func main() {
 	}()
 
 	/// End connect to RabbitMQ
+
+	/// Consumer to consume messages
+	service := NewService()
+	amqpConsumer := NewConsumer(service)
+
+	go amqpConsumer.Listen(ch)
+	/// Start gRPC server
 	grpcServer := grpc.NewServer()
 	l, err := net.Listen("tcp", grpcAddr)
 	if err != nil {
