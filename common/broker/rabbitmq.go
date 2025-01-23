@@ -1,0 +1,37 @@
+package broker
+
+import (
+	"fmt"
+	"log"
+
+	amqp "github.com/rabbitmq/amqp091-go"
+)
+
+func Connect(user, password, host, port string) (*amqp.Channel, func() error) {
+	// Create connection
+	address := fmt.Sprintf("amqp://%s:%s@%s:%s", user, password, host, port)
+
+	conn, err := amqp.Dial(address)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	/// Orders service -> RabbitMQ -> Payment service
+	err = ch.ExchangeDeclare(OrderCreatedEvent, "direct", true, false, false, false, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	/// Payment Service -> RabbitMQ -> fanout to Orders, Stock, and Kitchen services
+	err = ch.ExchangeDeclare(OrderCreatedPaid, "fanout", true, false, false, false, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return ch, conn.Close
+}
