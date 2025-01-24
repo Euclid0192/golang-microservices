@@ -25,7 +25,7 @@ func (g *gateway) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest) (*p
 	c := pb.NewOrderServiceClient(conn)
 
 	return c.CreateOrder(ctx, &pb.CreateOrderRequest{
-		CusomterID: p.CusomterID,
+		CustomerID: p.CustomerID,
 		Items:      p.Items,
 	})
 }

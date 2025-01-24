@@ -41,7 +41,7 @@ func (h *handler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	o, err := h.gateway.CreateOrder(r.Context(), &pb.CreateOrderRequest{
-		CusomterID: customerID,
+		CustomerID: customerID,
 		Items:      items,
 	})
 
