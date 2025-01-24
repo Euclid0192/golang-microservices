@@ -28,7 +28,7 @@ message ItemsWithQuantity {
 }
 
 message CreateOrderRequest {
-    string cusomterID = 1;
+    string customerID = 1;
     /// repeated === list 
     repeated ItemsWithQuantity Items = 2;
 }
