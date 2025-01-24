@@ -55,6 +55,6 @@ func (c *consumer) Listen(ch *amqp.Channel) {
 			log.Printf("Payment link %s", paymentLink)
 		}
 	}()
-
 	<-forever
+	// log.Printf("Payment link %s", "hello")
 }

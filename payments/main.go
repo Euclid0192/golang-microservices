@@ -10,7 +10,9 @@ import (
 	"github.com/Euclid0192/commons/broker"
 	"github.com/Euclid0192/commons/discovery"
 	"github.com/Euclid0192/commons/discovery/consul"
+	stripeProcessor "github.com/Euclid0192/order-management-system-payments/processor/stripe"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/stripe/stripe-go/v78"
 	"google.golang.org/grpc"
 )
 
@@ -22,6 +24,7 @@ var (
 	amqpPass    = common.EnvString("RABBITMQ_PASS", "guest")
 	amqpHost    = common.EnvString("RABBITMQ_HOST", "localhost")
 	amqpPort    = common.EnvString("RABBITMQ_PORT", "5672")
+	stripeKey   = common.EnvString("STRIPE_KEY", "")
 )
 
 func main() {
@@ -50,6 +53,9 @@ func main() {
 	defer registry.Deregister(ctx, instanceID, serviceName)
 	/// End register service
 
+	/// Stripe setup
+	stripe.Key = stripeKey
+
 	/// Connect to RabbitMQ
 	ch, close := broker.Connect(amqpUser, amqpPass, amqpHost, amqpPort)
 	defer func() {
@@ -60,7 +66,8 @@ func main() {
 	/// End connect to RabbitMQ
 
 	/// Consumer to consume messages
-	service := NewService()
+	stripeProcessor := stripeProcessor.NewProcessor()
+	service := NewService(stripeProcessor)
 	amqpConsumer := NewConsumer(service)
 
 	go amqpConsumer.Listen(ch)
