@@ -16,20 +16,62 @@ func NewService(store OrdersStore) *service {
 	return &service{store: store}
 }
 
-func (s *service) CreateOrder(ctx context.Context) error {
-	return nil
+func (s *service) UpdateOrder(ctx context.Context, p *pb.Order) (*pb.Order, error) {
+	if err := s.store.Update(ctx, p.ID, p); err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
-func (s *service) ValidateOrders(ctx context.Context, p *pb.CreateOrderRequest) error {
+func (s *service) GetOrder(ctx context.Context, p *pb.GetOrderRequest) (*pb.Order, error) {
+	return s.store.Get(ctx, p.OrderID, p.CustomerID)
+}
+
+func (s *service) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest, items []*pb.Item) (*pb.Order, error) {
+	// items, err := s.ValidateOrders(ctx, p)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	id, err := s.store.Create(ctx, p, items)
+	if err != nil {
+		return nil, err
+	}
+
+	/// Temp
+	o := &pb.Order{
+		ID:         id,
+		CustomerID: p.CustomerID,
+		Status:     "pending",
+		Items:      items,
+	}
+
+	return o, err
+}
+
+func (s *service) ValidateOrders(ctx context.Context, p *pb.CreateOrderRequest) ([]*pb.Item, error) {
 	if len(p.Items) == 0 {
-		return common.ErrorNoItem
+		return nil, common.ErrorNoItem
 	}
 
 	mergedItems := mergeItemsWithQuantities(p.Items)
 
 	log.Printf("Merged items: %v", mergedItems)
 
-	return nil
+	/// validate with stock service later
+
+	///	Temp hard-coded data
+	var itemsWithPrice []*pb.Item
+	for _, i := range mergedItems {
+		itemsWithPrice = append(itemsWithPrice, &pb.Item{
+			PriceID:  "price_1Qkc7xP3SxpbeGudlu23Tljm",
+			ID:       i.ID,
+			Quantity: i.Quantity,
+		})
+	}
+
+	return itemsWithPrice, nil
 }
 
 func mergeItemsWithQuantities(items []*pb.ItemsWithQuantity) []*pb.ItemsWithQuantity {

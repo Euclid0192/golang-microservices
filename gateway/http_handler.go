@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	common "github.com/Euclid0192/commons"
@@ -22,10 +23,35 @@ func NewHandler(gateway gateway.OrdersGateway) *handler {
 }
 
 func (h *handler) registerRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /api/customers/{customerID}/orders", h.HandleCreateOrder)
+	/// Serve static files (success & cancel)
+	mux.Handle("/", http.FileServer(http.Dir("public")))
+
+	mux.HandleFunc("POST /api/customers/{customerID}/orders", h.handleCreateOrder)
+	mux.HandleFunc("GET /api/customers/{customerID}/orders/{orderID}", h.handleGetOrder)
+
 }
 
-func (h *handler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
+func (h *handler) handleGetOrder(w http.ResponseWriter, r *http.Request) {
+	customerID := r.PathValue("customerID")
+	orderID := r.PathValue("orderID")
+
+	o, err := h.gateway.GetOrder(r.Context(), orderID, customerID)
+	/// grpc error, need to convert
+	rStatus := status.Convert(err)
+
+	if rStatus != nil {
+		if rStatus.Code() != codes.InvalidArgument {
+			common.WriteError(w, http.StatusBadRequest, rStatus.Message())
+			return
+		}
+		common.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	common.WriteJSON(w, http.StatusOK, o)
+}
+
+func (h *handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	customerID := r.PathValue("customerID")
 
 	var items []*pb.ItemsWithQuantity
@@ -41,7 +67,7 @@ func (h *handler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	o, err := h.gateway.CreateOrder(r.Context(), &pb.CreateOrderRequest{
-		CusomterID: customerID,
+		CustomerID: customerID,
 		Items:      items,
 	})
 
@@ -57,8 +83,13 @@ func (h *handler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	res := &CreateOrderRequest{
+		Order:         o,
+		RedirectToURL: fmt.Sprintf("http://localhost:8080/success.html?customerID=%s&orderID=%s", o.CustomerID, o.ID),
+	}
+
 	/// Write newly created order back to client
-	common.WriteJSON(w, http.StatusOK, o)
+	common.WriteJSON(w, http.StatusOK, res)
 }
 
 func validateItems(items []*pb.ItemsWithQuantity) error {
