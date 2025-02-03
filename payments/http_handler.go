@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
+	pb "github.com/Euclid0192/commons/api"
+	"github.com/Euclid0192/commons/broker"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/stripe/stripe-go/v78"
 	"github.com/stripe/stripe-go/v78/webhook"
@@ -66,7 +70,27 @@ func (h *PaymentHTTPHandler) handleCheckoutWebhook(w http.ResponseWriter, r *htt
 			log.Printf("Payment for Checkout Session %v successful!", cs.ID)
 
 			/// Publish to OrderPaid queue
+			orderID := cs.Metadata["orderID"]
+			customerID := cs.Metadata["customerID"]
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			o := &pb.Order{
+				ID:          orderID,
+				CustomerID:  customerID,
+				Status:      "paid",
+				PaymentLink: "",
+			}
+			marshalledOrder, _ := json.Marshal(o)
+
+			h.channel.PublishWithContext(ctx, broker.OrderPaidEvent, "", false, false, amqp.Publishing{
+				ContentType:  "application/json",
+				Body:         marshalledOrder,
+				DeliveryMode: amqp.Persistent,
+			})
 		}
+
+		log.Println("Message published order.paid")
 	}
 
 	w.WriteHeader(http.StatusOK)

@@ -11,6 +11,7 @@ import (
 	"github.com/Euclid0192/commons/broker"
 	"github.com/Euclid0192/commons/discovery"
 	"github.com/Euclid0192/commons/discovery/consul"
+	"github.com/Euclid0192/order-management-system-payments/gateway"
 	stripeProcessor "github.com/Euclid0192/order-management-system-payments/processor/stripe"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/stripe/stripe-go/v78"
@@ -70,7 +71,8 @@ func main() {
 
 	/// Consumer to consume messages
 	stripeProcessor := stripeProcessor.NewProcessor()
-	service := NewService(stripeProcessor)
+	gateway := gateway.NewGRPCGateway(registry)
+	service := NewService(stripeProcessor, gateway)
 	amqpConsumer := NewConsumer(service)
 
 	go amqpConsumer.Listen(ch)

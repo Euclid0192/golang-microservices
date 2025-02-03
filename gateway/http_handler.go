@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	common "github.com/Euclid0192/commons"
@@ -82,8 +83,13 @@ func (h *handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	res := &CreateOrderRequest{
+		Order:         o,
+		RedirectToURL: fmt.Sprintf("http://localhost:8080/success.html?customerID=%s&orderID=%s", o.CustomerID, o.ID),
+	}
+
 	/// Write newly created order back to client
-	common.WriteJSON(w, http.StatusOK, o)
+	common.WriteJSON(w, http.StatusOK, res)
 }
 
 func validateItems(items []*pb.ItemsWithQuantity) error {

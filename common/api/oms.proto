@@ -9,6 +9,7 @@ message Order {
     string customerID = 2;
     string Status = 3;
     repeated Item Items = 4;
+    string PaymentLink = 5;
 }
 
 message Item {
@@ -21,6 +22,7 @@ message Item {
 service OrderService {
     rpc CreateOrder(CreateOrderRequest) returns (Order);
     rpc GetOrder(GetOrderRequest) returns (Order);
+    rpc UpdateOrder(Order) returns (Order);
 }
 
 message ItemsWithQuantity {

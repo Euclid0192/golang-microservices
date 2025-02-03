@@ -28,7 +28,7 @@ func Connect(user, password, host, port string) (*amqp.Channel, func() error) {
 	}
 
 	/// Payment Service -> RabbitMQ -> fanout to Orders, Stock, and Kitchen services
-	err = ch.ExchangeDeclare(OrderCreatedPaid, "fanout", true, false, false, false, nil)
+	err = ch.ExchangeDeclare(OrderPaidEvent, "fanout", true, false, false, false, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
