@@ -18,6 +18,7 @@ var (
 	orderServiceAddr = "localhost:3000"
 	consulAddr       = common.EnvString("CONSUL_ADDR", "localhost:8500")
 	serviceName      = "gateway"
+	jaegerAddr       = common.EnvString("JAEGER_ADDR", "localhost:4318")
 )
 
 func main() {
@@ -32,6 +33,12 @@ func main() {
 	// log.Printf("Dialing order service at %s", orderServiceAddr)
 
 	/// New: connect through a gateway
+
+	/// Add tracer
+	err := common.SetGlobalTracer(context.TODO(), serviceName, jaegerAddr)
+	if err != nil {
+		log.Fatal("failed to set global tracer")
+	}
 
 	// Register new service for every microservice
 	registry, err := consul.NewRegistry(consulAddr, serviceName)

@@ -29,9 +29,17 @@ var (
 	amqpPort             = common.EnvString("RABBITMQ_PORT", "5672")
 	stripeKey            = common.EnvString("STRIPE_KEY", "")
 	endpointStripeSecret = common.EnvString("STRIPE_ENDPOINT_SECRET", "whsec...")
+	jaegerAddr           = common.EnvString("JAEGER_ADDR", "localhost:4318")
 )
 
 func main() {
+
+	/// Add tracer
+	err := common.SetGlobalTracer(context.TODO(), serviceName, jaegerAddr)
+	if err != nil {
+		log.Fatal("failed to set global tracer")
+	}
+
 	// Register new service for every microservice (template for all services)
 	registry, err := consul.NewRegistry(consulAddr, serviceName)
 	if err != nil {
