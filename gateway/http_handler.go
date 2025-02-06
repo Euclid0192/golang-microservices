@@ -9,6 +9,7 @@ import (
 	pb "github.com/Euclid0192/commons/api"
 	"github.com/Euclid0192/order-management-system-gateway/gateway"
 	"go.opentelemetry.io/otel"
+	otelCodes "go.opentelemetry.io/otel/codes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -48,6 +49,8 @@ func (h *handler) handleGetOrder(w http.ResponseWriter, r *http.Request) {
 	rStatus := status.Convert(err)
 
 	if rStatus != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
+
 		if rStatus.Code() != codes.InvalidArgument {
 			common.WriteError(w, http.StatusBadRequest, rStatus.Message())
 			return
@@ -90,6 +93,7 @@ func (h *handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	rStatus := status.Convert(err)
 
 	if rStatus != nil {
+		span.SetStatus(otelCodes.Error, err.Error())
 		if rStatus.Code() != codes.InvalidArgument {
 			common.WriteError(w, http.StatusBadRequest, rStatus.Message())
 			return

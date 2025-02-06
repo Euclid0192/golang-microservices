@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"log"
 
 	pb "github.com/Euclid0192/commons/api"
 	"github.com/Euclid0192/commons/broker"
@@ -35,7 +34,7 @@ func (h *grpcHandler) GetOrder(ctx context.Context, p *pb.GetOrderRequest) (*pb.
 }
 
 func (h *grpcHandler) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest) (*pb.Order, error) {
-	log.Printf("New order received! Order %v", p)
+	// log.Printf("New order received! Order %v", p)
 
 	items, err := h.service.ValidateOrders(ctx, p)
 	if err != nil {
