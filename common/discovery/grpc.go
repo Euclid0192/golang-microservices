@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"context"
+	"log"
 	"math/rand"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -14,6 +15,8 @@ func ServiceConnection(ctx context.Context, servicename string, registry Registr
 	if err != nil {
 		return nil, err
 	}
+
+	log.Printf("Discovered %d instances of %s", len(addrs), servicename)
 
 	/// Pick random service among all
 	return grpc.NewClient(

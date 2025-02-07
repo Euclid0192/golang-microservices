@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	pb "github.com/Euclid0192/commons/api"
 	"github.com/Euclid0192/commons/broker"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
 	// "go.opentelemetry.io/otel"
 )
 
@@ -41,11 +43,11 @@ func (c *consumer) Listen(ch *amqp.Channel) {
 		for d := range msgs {
 			log.Printf("Received message: %s", d.Body)
 
-			// // Extract the headers
-			// ctx := broker.ExtractAMQPHeader(context.Background(), d.Headers)
+			// Extract the headers
+			ctx := broker.ExtractAMQPHeader(context.Background(), d.Headers)
 
-			// tr := otel.Tracer("amqp")
-			// _, messageSpan := tr.Start(ctx, fmt.Sprintf("AMQP - consume - %s", q.Name))
+			tr := otel.Tracer("amqp")
+			_, messageSpan := tr.Start(ctx, fmt.Sprintf("AMQP - consume - %s", q.Name))
 
 			o := &pb.Order{}
 			if err := json.Unmarshal(d.Body, o); err != nil {
@@ -66,8 +68,8 @@ func (c *consumer) Listen(ch *amqp.Channel) {
 				continue
 			}
 
-			// messageSpan.AddEvent("order.updated")
-			// messageSpan.End()
+			messageSpan.AddEvent("order.updated")
+			messageSpan.End()
 
 			log.Println("Order has been updated from AMQP")
 			/// All deliveries should be Acked after processed (consumed)
