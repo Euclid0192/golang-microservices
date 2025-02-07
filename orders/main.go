@@ -11,6 +11,7 @@ import (
 	"github.com/Euclid0192/commons/discovery"
 	"github.com/Euclid0192/commons/discovery/consul"
 	_ "github.com/joho/godotenv/autoload"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -26,10 +27,17 @@ var (
 )
 
 func main() {
+	/// Global logger
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
+	zap.ReplaceGlobals(logger)
+
 	/// Add tracer
 	err := common.SetGlobalTracer(context.TODO(), serviceName, jaegerAddr)
 	if err != nil {
-		log.Fatal("failed to set global tracer")
+		// log.Fatal("failed to set global tracer")
+		logger.Fatal("could not set global tracer", zap.Error(err))
 	}
 
 	// Register new service for every microservice (template for all services)
@@ -48,7 +56,7 @@ func main() {
 	go func() {
 		for {
 			if err := registry.HealthCheck(instanceID, serviceName); err != nil {
-				log.Fatalf("failed to health check")
+				logger.Error("failed to do health check", zap.Error(err))
 			}
 			time.Sleep(time.Second * 1)
 		}
@@ -77,13 +85,15 @@ func main() {
 	service := NewService(store)
 	serviceWithTelemetry := NewTelemetryMiddleware(service)
 	/// later can add any serviceWithSomething -> Decorator pattern
-	NewGRPCHandler(grpcServer, serviceWithTelemetry, ch)
+	serviceWithLogging := NewLoggingMiddleware(serviceWithTelemetry)
+	NewGRPCHandler(grpcServer, serviceWithLogging, ch)
 
 	// service.CreateOrder(context.Background()) /// empty Context
-	consumer := NewConsumer(serviceWithTelemetry)
+	consumer := NewConsumer(serviceWithLogging)
 	go consumer.Listen(ch)
 
-	log.Println("GRPC Server Started at", grpcAddr)
+	// log.Println("GRPC Server Started at", grpcAddr)
+	logger.Info("Starting GRPC Server at ", zap.String("port", grpcAddr))
 
 	if err := grpcServer.Serve(l); err != nil {
 		log.Fatal(err.Error())
