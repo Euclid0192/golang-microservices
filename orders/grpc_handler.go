@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	pb "github.com/Euclid0192/commons/api"
 	"github.com/Euclid0192/commons/broker"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 )
 
@@ -35,14 +37,26 @@ func (h *grpcHandler) GetOrder(ctx context.Context, p *pb.GetOrderRequest) (*pb.
 }
 
 func (h *grpcHandler) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest) (*pb.Order, error) {
-	log.Printf("New order received! Order %v", p)
+	// log.Printf("New order received! Order %v", p)
 
-	items, err := h.service.ValidateOrders(ctx, p)
+	/// Declare a queue
+	q, err := h.channel.QueueDeclare(broker.OrderCreatedEvent, true, false, false, false, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	/// Tracer
+	tr := otel.Tracer("amqp")
+	amqpContext, messageSpan := tr.Start(ctx, fmt.Sprintf("AMQP - publish - %s", q.Name))
+	defer messageSpan.End()
+	/// end tracer
+
+	items, err := h.service.ValidateOrders(amqpContext, p)
 	if err != nil {
 		return nil, err
 	}
 
-	o, err := h.service.CreateOrder(ctx, p, items)
+	o, err := h.service.CreateOrder(amqpContext, p, items)
 
 	/// Marshal order to publish to queue
 	marshalledOrder, err := json.Marshal(o)
@@ -50,13 +64,15 @@ func (h *grpcHandler) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest)
 		return nil, err
 	}
 
-	/// Declare a queue
-	q, err := h.channel.QueueDeclare(broker.OrderCreatedEvent, true, false, false, false, nil)
+	/// Inject the headers
+	headers := broker.InjectAMQPHeaders(amqpContext)
+
 	/// Send messages to queue
-	h.channel.PublishWithContext(ctx, "", q.Name, false, false, amqp.Publishing{
+	h.channel.PublishWithContext(amqpContext, "", q.Name, false, false, amqp.Publishing{
 		ContentType:  "application/json",
 		Body:         marshalledOrder,
 		DeliveryMode: amqp.Persistent,
+		Headers:      headers,
 	})
 
 	return o, nil
