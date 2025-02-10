@@ -26,7 +26,12 @@ func (s *service) UpdateOrder(ctx context.Context, p *pb.Order) (*pb.Order, erro
 }
 
 func (s *service) GetOrder(ctx context.Context, p *pb.GetOrderRequest) (*pb.Order, error) {
-	return s.store.Get(ctx, p.OrderID, p.CustomerID)
+	o, err := s.store.Get(ctx, p.OrderID, p.CustomerID)
+	if err != nil {
+		return nil, err
+	}
+
+	return o.ToProto(), err
 }
 
 func (s *service) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest, items []*pb.Item) (*pb.Order, error) {
@@ -35,14 +40,19 @@ func (s *service) CreateOrder(ctx context.Context, p *pb.CreateOrderRequest, ite
 	// 	return nil, err
 	// }
 
-	id, err := s.store.Create(ctx, p, items)
+	id, err := s.store.Create(ctx, Order{
+		CustomerID:  p.CustomerID,
+		Status:      "pending",
+		Items:       items,
+		PaymentLink: "",
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	/// Temp
 	o := &pb.Order{
-		ID:         id,
+		ID:         id.Hex(),
 		CustomerID: p.CustomerID,
 		Status:     "pending",
 		Items:      items,
