@@ -10,6 +10,7 @@ import (
 	"github.com/Euclid0192/commons/broker"
 	"github.com/Euclid0192/commons/discovery"
 	"github.com/Euclid0192/commons/discovery/consul"
+	"github.com/Euclid0192/order-management-system-orders/gateway"
 	_ "github.com/joho/godotenv/autoload"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -81,8 +82,11 @@ func main() {
 
 	defer l.Close()
 
+	/// gateway to call other services
+	gateway := gateway.NewGateway(registry)
+
 	store := NewStore()
-	service := NewService(store)
+	service := NewService(store, gateway)
 	serviceWithTelemetry := NewTelemetryMiddleware(service)
 	/// later can add any serviceWithSomething -> Decorator pattern
 	serviceWithLogging := NewLoggingMiddleware(serviceWithTelemetry)
